@@ -4,6 +4,10 @@ class ColorJourneyGame {
     this.ctx = canvas.getContext("2d");
     this.sentiment = sentiment;
 
+    // --- NEW: Audio Setup ---
+    this.audio = new Audio(this.sentiment === 'sad' ? 'sad.mp3' : 'happy.mp3');
+    this.audio.loop = true; // Make the music loop
+
     // State
     this.running = false;
     this.lastTime = null;
@@ -78,6 +82,10 @@ class ColorJourneyGame {
   start() {
     this.running = true;
     this.lastTime = null;
+    
+    // --- NEW: Play Audio ---
+    this.audio.play().catch(error => console.error("Audio playback failed:", error));
+    
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("resize", this.onResize);
@@ -87,10 +95,17 @@ class ColorJourneyGame {
   stop() {
     this.running = false;
     if (this.rafId) cancelAnimationFrame(this.rafId);
+
+    // --- NEW: Stop Audio ---
+    this.audio.pause();
+    this.audio.currentTime = 0; // Reset for next time
+
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("resize", this.onResize);
   }
+
+  // ... rest of the code is unchanged ...
 
   onKeyDown(e){ this.keys[e.key]=true; }
   onKeyUp(e){ this.keys[e.key]=false; }
