@@ -51,7 +51,7 @@
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <div id="main-content" class="w-full h-full flex items-center justify-center gap-6">
-        <!-- Chatbot and Game Container HTML remains the same -->
+        <!-- Chatbot Container -->
         <div id="chatbot-container" class="chatbot-centered flex flex-col bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
             <div class="flex-shrink-0 bg-black/20 p-4 border-b border-white/10">
                 <h1 class="text-xl md:text-2xl font-bold text-center text-indigo-400">Emotion Analyst</h1>
@@ -84,6 +84,7 @@
                 </div>
             </div>
         </div>
+        <!-- Game Container -->
         <div id="game-container" class="game-hidden bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
             <canvas id="game-canvas" class="w-full h-full block"></canvas>
         </div>
@@ -102,42 +103,26 @@
         const gameContainer = document.getElementById('game-container');
         const gameCanvas = document.getElementById('game-canvas');
         
-        // --- API ENDPOINTS ---
-        const SENTIMENT_API_ENDPOINT = 'http://localhost:5000/api/sentiment';
-        const CHAT_API_ENDPOINT = 'http://localhost:5000/api/chat';
-        
-        // --- STATE MANAGEMENT ---
+        // This is the URL where your Python backend is running.
+        const API_ENDPOINT = 'http://localhost:5000/api/sentiment';
         let currentGame = null;
-        // This new variable tracks the conversation state: 'initial', 'sentiment_offered', or 'game_launched'
-        let chatState = 'initial'; 
 
-        // --- CORE CHAT LOGIC ---
+        // --- Chatbot & UI Logic ---
         const handleSendMessage = async () => {
             const message = userInput.value.trim();
             if (!message) return;
-            
             addMessage(message, 'user');
             userInput.value = '';
             typingIndicator.classList.remove('hidden');
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
-            // --- STATE-BASED API CALL ---
-            // If this is the first message, use the sentiment API.
-            if (chatState === 'initial') {
-                const sentiment = await getSentiment(message);
-                typingIndicator.classList.add('hidden');
-                if (sentiment) {
-                    const botMessage = `Based on what you said, I think you're feeling a bit **${sentiment}**. Would you like to try an activity?`;
-                    addMessage(botMessage, 'bot', sentiment);
-                    // After offering the game, switch to conversational mode for all future chats
-                    chatState = 'sentiment_offered'; 
-                }
-            } else { // For all subsequent messages ('sentiment_offered' or 'game_launched'), use the general chat API.
-                const chatResponse = await getChatResponse(message);
-                typingIndicator.classList.add('hidden');
-                if (chatResponse) {
-                    addMessage(chatResponse, 'bot'); // Add bot response without a button
-                }
+            // This now calls the REAL backend API
+            const sentiment = await getSentiment(message);
+            
+            typingIndicator.classList.add('hidden');
+            if (sentiment) { // Only send bot message if sentiment was successfully fetched
+                const botMessage = `Based on what you said, I think you're feeling a bit **${sentiment}**. I have an activity that might suit your mood. Would you like to try it?`;
+                addMessage(botMessage, 'bot', sentiment);
             }
         };
         
@@ -152,9 +137,7 @@
             const messageBubble = document.createElement('div');
             messageBubble.className = `message-bubble p-3 max-w-xs md:max-w-md rounded-2xl shadow-md ${sender === 'user' ? 'bg-gray-600 rounded-br-lg' : 'bg-indigo-600 rounded-bl-lg'}`;
             messageBubble.innerHTML = `<p class="text-white">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
-            
-            // Only add the "Start Game" button if we are in the initial state
-            if (sender === 'bot' && sentiment && chatState === 'initial') {
+            if (sender === 'bot' && sentiment) {
                 const button = document.createElement('button');
                 button.innerText = 'Start Color Journey';
                 button.className = 'mt-3 w-full bg-white text-indigo-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300 transform hover:scale-105';
@@ -166,42 +149,33 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // --- API HELPER FUNCTIONS ---
+        // --- Live API Sentiment Function ---
         async function getSentiment(message) {
             try {
-                const response = await fetch(SENTIMENT_API_ENDPOINT, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                const response = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({ message: message }),
                 });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 return data.sentiment;
+
             } catch (error) {
                 console.error("Error fetching sentiment:", error);
-                addMessage("Sorry, the analysis service is unavailable. Let's start with a calming journey.", "bot", "sad");
+                addMessage("Sorry, I'm having trouble connecting to my analysis service right now. Let's just start with a calming journey.", "bot", "sad");
                 return null;
             }
         }
 
-        async function getChatResponse(message) {
-            try {
-                const response = await fetch(CHAT_API_ENDPOINT, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message }),
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                return data.response;
-            } catch (error) {
-                console.error("Error fetching chat response:", error);
-                addMessage("Sorry, the chat service seems to be down right now.", "bot");
-                return null;
-            }
-        }
-
-        // --- GAME LAUNCH LOGIC ---
+        // --- Game Launch & Integration Logic ---
         function launchGame(sentiment) {
-            chatState = 'game_launched'; // --- STATE CHANGE TRIGGER ---
             if (!sentiment) return;
             if (currentGame) {
                 currentGame.stop();
@@ -220,7 +194,8 @@
             } else {
                 console.error("ColorJourneyGame class not found. Make sure index.js is loaded correctly.");
                 const ctx = gameCanvas.getContext('2d');
-                ctx.fillStyle = 'white'; ctx.font = '16px Inter';
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Inter';
                 ctx.fillText('Error: Game asset "index.js" could not be loaded.', 20, 40);
             }
         }

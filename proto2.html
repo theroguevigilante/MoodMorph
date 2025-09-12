@@ -108,8 +108,7 @@
         
         // --- STATE MANAGEMENT ---
         let currentGame = null;
-        // This new variable tracks the conversation state: 'initial', 'sentiment_offered', or 'game_launched'
-        let chatState = 'initial'; 
+        let isGameLaunched = false; // This new variable tracks the application's state
 
         // --- CORE CHAT LOGIC ---
         const handleSendMessage = async () => {
@@ -122,17 +121,16 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
             // --- STATE-BASED API CALL ---
-            // If this is the first message, use the sentiment API.
-            if (chatState === 'initial') {
+            // If the game hasn't launched, we use the sentiment API.
+            // Otherwise, we use the general chat API.
+            if (!isGameLaunched) {
                 const sentiment = await getSentiment(message);
                 typingIndicator.classList.add('hidden');
                 if (sentiment) {
                     const botMessage = `Based on what you said, I think you're feeling a bit **${sentiment}**. Would you like to try an activity?`;
                     addMessage(botMessage, 'bot', sentiment);
-                    // After offering the game, switch to conversational mode for all future chats
-                    chatState = 'sentiment_offered'; 
                 }
-            } else { // For all subsequent messages ('sentiment_offered' or 'game_launched'), use the general chat API.
+            } else {
                 const chatResponse = await getChatResponse(message);
                 typingIndicator.classList.add('hidden');
                 if (chatResponse) {
@@ -153,8 +151,8 @@
             messageBubble.className = `message-bubble p-3 max-w-xs md:max-w-md rounded-2xl shadow-md ${sender === 'user' ? 'bg-gray-600 rounded-br-lg' : 'bg-indigo-600 rounded-bl-lg'}`;
             messageBubble.innerHTML = `<p class="text-white">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
             
-            // Only add the "Start Game" button if we are in the initial state
-            if (sender === 'bot' && sentiment && chatState === 'initial') {
+            // Only add the "Start Game" button if we are in the pre-game state
+            if (sender === 'bot' && sentiment && !isGameLaunched) {
                 const button = document.createElement('button');
                 button.innerText = 'Start Color Journey';
                 button.className = 'mt-3 w-full bg-white text-indigo-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300 transform hover:scale-105';
@@ -201,7 +199,7 @@
 
         // --- GAME LAUNCH LOGIC ---
         function launchGame(sentiment) {
-            chatState = 'game_launched'; // --- STATE CHANGE TRIGGER ---
+            isGameLaunched = true; // --- STATE CHANGE TRIGGER ---
             if (!sentiment) return;
             if (currentGame) {
                 currentGame.stop();
@@ -227,3 +225,4 @@
     </script>
 </body>
 </html>
+

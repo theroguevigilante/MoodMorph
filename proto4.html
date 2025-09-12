@@ -26,6 +26,7 @@
         .chatbot-centered {
             width: 100%; max-width: 48rem;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(79, 70, 229, 0.3);
+            animation: float 6s ease-in-out infinite; /* New floating animation */
         }
         .game-hidden {
             opacity: 0; transform: scale(0.95) translateX(20px);
@@ -44,8 +45,31 @@
         .dot:nth-child(2) { animation-delay: 0.2s; }
         .dot:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
-        .message-bubble { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Updated animation for message bubbles */
+        .message-bubble { animation: popIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes popIn { 
+            from { opacity: 0; transform: translateY(10px) scale(0.95); } 
+            to { opacity: 1; transform: translateY(0) scale(1); } 
+        }
+
+        /* New floating animation for the main container */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* New: Fix for user input text color */
+        #user-input {
+            color: white;
+        }
+        textarea:-webkit-autofill,
+        textarea:-webkit-autofill:hover,
+        textarea:-webkit-autofill:focus,
+        textarea:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #374151 inset !important; /* Matches bg-gray-700 */
+            -webkit-text-fill-color: white !important;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -77,8 +101,9 @@
             </div>
             <div class="p-4 border-t border-white/10 mt-auto bg-black/10">
                 <div id="chat-input-container" class="flex items-center space-x-2 md:space-x-4">
-                    <textarea id="user-input" class="flex-1 p-3 bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition" rows="1" placeholder="Type your message..."></textarea>
-                    <button id="send-button" type="button" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold p-3 rounded-full transition duration-300 shadow-lg transform hover:scale-105">
+                    <textarea id="user-input" class="flex-1 p-3 bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition"></textarea>
+                    <!-- Added active:scale-95 for better click feedback -->
+                    <button id="send-button" type="button" class="bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold p-3 rounded-full transition duration-300 shadow-lg transform hover:scale-105 active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                 </div>
@@ -108,7 +133,6 @@
         
         // --- STATE MANAGEMENT ---
         let currentGame = null;
-        // This new variable tracks the conversation state: 'initial', 'sentiment_offered', or 'game_launched'
         let chatState = 'initial'; 
 
         // --- CORE CHAT LOGIC ---
@@ -121,22 +145,19 @@
             typingIndicator.classList.remove('hidden');
             chatMessages.scrollTop = chatMessages.scrollHeight;
             
-            // --- STATE-BASED API CALL ---
-            // If this is the first message, use the sentiment API.
             if (chatState === 'initial') {
                 const sentiment = await getSentiment(message);
                 typingIndicator.classList.add('hidden');
                 if (sentiment) {
                     const botMessage = `Based on what you said, I think you're feeling a bit **${sentiment}**. Would you like to try an activity?`;
                     addMessage(botMessage, 'bot', sentiment);
-                    // After offering the game, switch to conversational mode for all future chats
                     chatState = 'sentiment_offered'; 
                 }
-            } else { // For all subsequent messages ('sentiment_offered' or 'game_launched'), use the general chat API.
+            } else { 
                 const chatResponse = await getChatResponse(message);
                 typingIndicator.classList.add('hidden');
                 if (chatResponse) {
-                    addMessage(chatResponse, 'bot'); // Add bot response without a button
+                    addMessage(chatResponse, 'bot');
                 }
             }
         };
@@ -153,7 +174,6 @@
             messageBubble.className = `message-bubble p-3 max-w-xs md:max-w-md rounded-2xl shadow-md ${sender === 'user' ? 'bg-gray-600 rounded-br-lg' : 'bg-indigo-600 rounded-bl-lg'}`;
             messageBubble.innerHTML = `<p class="text-white">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
             
-            // Only add the "Start Game" button if we are in the initial state
             if (sender === 'bot' && sentiment && chatState === 'initial') {
                 const button = document.createElement('button');
                 button.innerText = 'Start Color Journey';
@@ -201,7 +221,7 @@
 
         // --- GAME LAUNCH LOGIC ---
         function launchGame(sentiment) {
-            chatState = 'game_launched'; // --- STATE CHANGE TRIGGER ---
+            chatState = 'game_launched';
             if (!sentiment) return;
             if (currentGame) {
                 currentGame.stop();

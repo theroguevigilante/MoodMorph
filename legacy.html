@@ -14,49 +14,104 @@
             background: linear-gradient(135deg, #111827, #1a202c);
             overflow: hidden;
         }
-        #chat-messages::-webkit-scrollbar { width: 6px; }
-        #chat-messages::-webkit-scrollbar-track { background: transparent; }
-        #chat-messages::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
-        #chat-messages::-webkit-scrollbar-thumb:hover { background: #718096; }
+
+        #chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 3px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+        
         #chatbot-container, #game-container {
             transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid rgba(255, 255, 255, 0.1);
             height: 90vh;
         }
+
         .chatbot-centered {
-            width: 100%; max-width: 48rem;
+            width: 100%;
+            max-width: 48rem;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(79, 70, 229, 0.3);
         }
+
         .game-hidden {
-            opacity: 0; transform: scale(0.95) translateX(20px);
-            width: 0; flex-grow: 0; padding: 0; border: none;
+            opacity: 0;
+            transform: scale(0.95) translateX(20px);
+            width: 0;
+            flex-grow: 0;
+            padding: 0;
+            border: none;
         }
+
         .chatbot-sidebar {
-            width: 100%; max-width: 24rem;
+            width: 100%;
+            max-width: 24rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
+
         .game-visible {
-            opacity: 1; transform: scale(1) translateX(0);
-            width: 100%; flex-grow: 1;
+            opacity: 1;
+            transform: scale(1) translateX(0);
+            width: 100%;
+            flex-grow: 1;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(79, 70, 229, 0.5);
         }
-        .dot { animation: typing 1.4s infinite both; }
+
+        .dot {
+            animation: typing 1.4s infinite;
+            animation-fill-mode: both;
+        }
         .dot:nth-child(2) { animation-delay: 0.2s; }
         .dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
-        .message-bubble { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .message-bubble {
+            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <div id="main-content" class="w-full h-full flex items-center justify-center gap-6">
-        <!-- Chatbot and Game Container HTML remains the same -->
+        
+        <!-- Chatbot Container -->
         <div id="chatbot-container" class="chatbot-centered flex flex-col bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
             <div class="flex-shrink-0 bg-black/20 p-4 border-b border-white/10">
                 <h1 class="text-xl md:text-2xl font-bold text-center text-indigo-400">Emotion Analyst</h1>
                 <p class="text-center text-gray-400 text-sm">How are you feeling today?</p>
             </div>
+            
             <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
                 <div class="flex justify-start">
                     <div class="message-bubble bg-indigo-600 rounded-2xl rounded-bl-lg p-3 max-w-xs md:max-w-md shadow-md">
@@ -64,6 +119,7 @@
                     </div>
                 </div>
             </div>
+
             <div id="typing-indicator" class="p-4 hidden">
                  <div class="flex items-center space-x-2">
                     <div class="bg-gray-700 p-3 rounded-2xl rounded-bl-lg">
@@ -75,6 +131,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="p-4 border-t border-white/10 mt-auto bg-black/10">
                 <div id="chat-input-container" class="flex items-center space-x-2 md:space-x-4">
                     <textarea id="user-input" class="flex-1 p-3 bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition" rows="1" placeholder="Type your message..."></textarea>
@@ -84,12 +141,15 @@
                 </div>
             </div>
         </div>
+
+        <!-- Game Container -->
         <div id="game-container" class="game-hidden bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
             <canvas id="game-canvas" class="w-full h-full block"></canvas>
         </div>
     </div>
-
-    <!-- The external game script is loaded here -->
+    
+    <!-- The game developer's script will be loaded here. -->
+    <!-- It must define a `ColorJourneyGame` class. -->
     <script src="index.js" defer></script>
 
     <script>
@@ -102,48 +162,30 @@
         const gameContainer = document.getElementById('game-container');
         const gameCanvas = document.getElementById('game-canvas');
         
-        // --- API ENDPOINTS ---
-        const SENTIMENT_API_ENDPOINT = 'http://localhost:5000/api/sentiment';
-        const CHAT_API_ENDPOINT = 'http://localhost:5000/api/chat';
-        
-        // --- STATE MANAGEMENT ---
         let currentGame = null;
-        // This new variable tracks the conversation state: 'initial', 'sentiment_offered', or 'game_launched'
-        let chatState = 'initial'; 
 
-        // --- CORE CHAT LOGIC ---
+        // --- Chatbot & UI Logic ---
         const handleSendMessage = async () => {
             const message = userInput.value.trim();
             if (!message) return;
-            
             addMessage(message, 'user');
             userInput.value = '';
+            userInput.rows = 1;
+            userInput.style.height = 'auto';
             typingIndicator.classList.remove('hidden');
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            
-            // --- STATE-BASED API CALL ---
-            // If this is the first message, use the sentiment API.
-            if (chatState === 'initial') {
-                const sentiment = await getSentiment(message);
-                typingIndicator.classList.add('hidden');
-                if (sentiment) {
-                    const botMessage = `Based on what you said, I think you're feeling a bit **${sentiment}**. Would you like to try an activity?`;
-                    addMessage(botMessage, 'bot', sentiment);
-                    // After offering the game, switch to conversational mode for all future chats
-                    chatState = 'sentiment_offered'; 
-                }
-            } else { // For all subsequent messages ('sentiment_offered' or 'game_launched'), use the general chat API.
-                const chatResponse = await getChatResponse(message);
-                typingIndicator.classList.add('hidden');
-                if (chatResponse) {
-                    addMessage(chatResponse, 'bot'); // Add bot response without a button
-                }
-            }
+            const sentiment = await getSentiment(message);
+            typingIndicator.classList.add('hidden');
+            const botMessage = `It sounds like you might be feeling a bit **${sentiment}**. Would you like to try an activity?`;
+            addMessage(botMessage, 'bot', sentiment);
         };
         
         sendButton.addEventListener('click', handleSendMessage);
         userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
         });
 
         function addMessage(text, sender, sentiment = null) {
@@ -152,9 +194,7 @@
             const messageBubble = document.createElement('div');
             messageBubble.className = `message-bubble p-3 max-w-xs md:max-w-md rounded-2xl shadow-md ${sender === 'user' ? 'bg-gray-600 rounded-br-lg' : 'bg-indigo-600 rounded-bl-lg'}`;
             messageBubble.innerHTML = `<p class="text-white">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
-            
-            // Only add the "Start Game" button if we are in the initial state
-            if (sender === 'bot' && sentiment && chatState === 'initial') {
+            if (sender === 'bot' && sentiment) {
                 const button = document.createElement('button');
                 button.innerText = 'Start Color Journey';
                 button.className = 'mt-3 w-full bg-white text-indigo-600 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300 transform hover:scale-105';
@@ -166,43 +206,12 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // --- API HELPER FUNCTIONS ---
-        async function getSentiment(message) {
-            try {
-                const response = await fetch(SENTIMENT_API_ENDPOINT, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message }),
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                return data.sentiment;
-            } catch (error) {
-                console.error("Error fetching sentiment:", error);
-                addMessage("Sorry, the analysis service is unavailable. Let's start with a calming journey.", "bot", "sad");
-                return null;
-            }
+        async function getSentiment(userInput) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            return Math.random() > 0.5 ? 'happy' : 'sad';
         }
 
-        async function getChatResponse(message) {
-            try {
-                const response = await fetch(CHAT_API_ENDPOINT, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message }),
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                return data.response;
-            } catch (error) {
-                console.error("Error fetching chat response:", error);
-                addMessage("Sorry, the chat service seems to be down right now.", "bot");
-                return null;
-            }
-        }
-
-        // --- GAME LAUNCH LOGIC ---
         function launchGame(sentiment) {
-            chatState = 'game_launched'; // --- STATE CHANGE TRIGGER ---
-            if (!sentiment) return;
             if (currentGame) {
                 currentGame.stop();
             }
@@ -213,17 +222,24 @@
             initializeGame(sentiment);
         }
         
+        // --- Game Integration Point ---
+        // This function assumes `ColorJourneyGame` is defined in the external script.js
         function initializeGame(sentiment) {
+            // Check if the game class is available before trying to use it
             if (typeof ColorJourneyGame !== 'undefined') {
                 currentGame = new ColorJourneyGame(gameCanvas, sentiment);
                 currentGame.start();
             } else {
-                console.error("ColorJourneyGame class not found. Make sure index.js is loaded correctly.");
+                console.error("ColorJourneyGame class not found. Make sure script.js is loaded and defines it.");
+                // Optionally display an error message on the canvas
                 const ctx = gameCanvas.getContext('2d');
-                ctx.fillStyle = 'white'; ctx.font = '16px Inter';
-                ctx.fillText('Error: Game asset "index.js" could not be loaded.', 20, 40);
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Error: Game could not be loaded.', gameCanvas.width / 2, gameCanvas.height / 2);
             }
         }
+
     </script>
 </body>
 </html>
