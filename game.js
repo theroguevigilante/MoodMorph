@@ -4,8 +4,12 @@ class ColorJourneyGame {
     this.ctx = canvas.getContext("2d");
     this.sentiment = sentiment;
 
-    // --- NEW: Game State ---
-    this.paused = false; // Tracks if the game is paused
+    // --- Audio Setup ---
+    this.audio = new Audio(this.sentiment === 'sad' ? 'sad.mp3' : 'happy.mp3');
+    this.audio.loop = true; // Make the music loop
+
+    // Game State
+    this.paused = false;
     this.running = false;
     this.lastTime = null;
     this.rafId = null;
@@ -28,25 +32,30 @@ class ColorJourneyGame {
     // Keys
     this.keys = {};
     
-    // Bind methods
+    // Bind methods to ensure 'this' context is correct
     this.animate = this.animate.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
     this.onResize = this.onResize.bind(this);
 
+    // Initial setup
     this.onResize();
     this.initClouds();
     this.player.x = this.canvas.width / 6;
     this.player.y = this.groundY - 100;
   }
 
-  // --- NEW: Pause Method ---
-  // This is called by the UI in index.html
+  // --- Pause Method ---
+  // Called by index.html to toggle the paused state.
   togglePause() {
     this.paused = !this.paused;
-    if (!this.paused) {
-      // If we are unpausing, restart the animation loop
-      this.lastTime = null; // Reset delta time to prevent a large jump
+    
+    if (this.paused) {
+      this.audio.pause(); // Pause music when game is paused
+    } else {
+      this.audio.play().catch(e => console.error("Audio resume failed", e)); // Resume music
+      // If unpausing, restart the animation loop to resume the game
+      this.lastTime = null; // Prevents a large time jump after unpausing
       this.rafId = requestAnimationFrame(this.animate);
     }
     return this.paused;
@@ -56,6 +65,9 @@ class ColorJourneyGame {
   start() {
     this.running = true;
     this.lastTime = null;
+    // --- Play Audio ---
+    this.audio.play().catch(error => console.error("Audio playback failed:", error));
+    
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("resize", this.onResize);
@@ -65,6 +77,11 @@ class ColorJourneyGame {
   stop() {
     this.running = false;
     if (this.rafId) cancelAnimationFrame(this.rafId);
+    
+    // --- Stop Audio ---
+    this.audio.pause();
+    this.audio.currentTime = 0; // Reset for next time
+
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("resize", this.onResize);
@@ -76,13 +93,14 @@ class ColorJourneyGame {
 
   onResize() {
     const container = this.canvas.parentElement;
+    if (!container) return;
     this.canvas.width = container.clientWidth;
     this.canvas.height = container.clientHeight;
     this.groundY = this.canvas.height - 80;
-    this.initClouds();
+    this.initClouds(); // Re-initialize clouds for the new size
   }
 
-  // Game Logic
+  // Game Logic Methods
   randomSpawnInterval() { return 0.8 + Math.random() * 1.5; }
 
   initClouds() {
@@ -108,9 +126,9 @@ class ColorJourneyGame {
     });
   }
 
-  // --- UPDATED: Main Game Loop ---
+  // Main Game Loop
   animate(ts) {
-    // If paused or not running, stop the loop
+    // If paused or stopped, do not continue the loop
     if (this.paused || !this.running) {
         return;
     }
@@ -152,11 +170,10 @@ class ColorJourneyGame {
         this.player.onGround = true;
     }
 
-    // Keep player in bounds
     if (this.player.x < 0) this.player.x = 0;
     if (this.player.x > this.canvas.width - this.player.size) this.player.x = this.canvas.width - this.player.size;
 
-    // Orb movement & collisions
+    // Orb collision
     this.orbs.forEach((orb) => {
         orb.y += orb.speed * dt;
         const dx = orb.x - (this.player.x + this.player.size / 2);
@@ -186,14 +203,12 @@ class ColorJourneyGame {
     const groundColor = this.sentiment === 'sad' ? this.lerpColor("#111", "#2e8b57", progressRatio) : "#2e8b57";
     const cloudSpeedMultiplier = this.sentiment === 'sad' ? (0.3 + 0.7 * progressRatio) : 1;
 
-    // Background
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, bgTopColor);
     g.addColorStop(1, bgBottomColor);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
 
-    // Clouds
     this.clouds.forEach((c) => {
         ctx.fillStyle = "rgba(255,255,255,0.85)";
         ctx.beginPath();
@@ -203,11 +218,9 @@ class ColorJourneyGame {
         if (c.x - c.rx > w) c.x = -c.rx;
     });
 
-    // Ground
     ctx.fillStyle = groundColor;
     ctx.fillRect(0, this.groundY, w, 80);
 
-    // Orbs
     this.orbs.forEach((o) => {
         ctx.beginPath();
         ctx.fillStyle = o.color;
@@ -215,21 +228,22 @@ class ColorJourneyGame {
         ctx.fill();
     });
 
-    // Player
     ctx.fillStyle = this.player.color;
     ctx.beginPath();
     ctx.arc(this.player.x + this.player.size / 2, this.player.y + this.player.size / 2, this.player.size, 0, Math.PI * 2);
     ctx.fill();
 
-    // HUD
     ctx.fillStyle = "#fff";
     ctx.font = "20px Inter";
     ctx.fillText(`Progress: ${this.collected}/${this.targetCollected}`, 20, 40);
   }
   
+  // Helper function to interpolate between two hex colors
   lerpColor(a, b, amount) {
     const hexToRgb = (h) => {
-      const [r, g, bl] = h.slice(1).match(/\w\w/g).map(x => parseInt(x, 16));
+      const match = h.slice(1).match(/.{2}/g);
+      if (!match) return [0,0,0];
+      const [r, g, bl] = match.map(x => parseInt(x, 16));
       return [r, g, bl];
     };
     const [r1, g1, b1] = hexToRgb(a);
