@@ -116,7 +116,7 @@
         </div>
     </div>
 
-    <script src="game3.js" defer></script>
+    <script src="game.js" defer></script>
 
     <script>
         // DOM Elements
@@ -130,8 +130,8 @@
         const pauseButton = document.getElementById('pause-button');
         const pauseOverlay = document.getElementById('pause-overlay');
         
-        const SENTIMENT_API_ENDPOINT = 'http://localhost:5000/api/sentiment';
-        const CHAT_API_ENDPOINT = 'http://localhost:5000/api/chat';
+        const SENTIMENT_API_ENDPOINT = 'https://moodmorphapi.onrender.com/api/sentiment';
+        const CHAT_API_ENDPOINT = 'https://moodmorphapi.onrender.com/api/chat';
         
         let currentGame = null;
         let chatState = 'initial'; 
